@@ -34,25 +34,29 @@ Amplify.configure({
 
 export default function App() {
     useEffect(() => {
-        Interactions.onComplete({
-            botName,
-            callback: (error?: Error, completion?: { [key: string]: any }) => {
-                if (error) {
-                    alert('bot conversation failed');
-                } else if (completion) {
-                    console.debug('done: ' + JSON.stringify(completion, null, 2));
-                }
-            },
-        });
+      Interactions.onComplete({
+        botName,
+        callback: (error?: Error, response?: {[key: string]: any}) => {
+          if (error) {
+              alert('bot conversation failed');
+          } else if (response) {
+              console.debug('response: ' + JSON.stringify(response, null, 2));
+              if (response.messages == null || response.messages.length == 0) {
+                console.log("I'm not sure how to help with that.");
+              } else {
+                const message = response.messages[0].content;
+                console.log(message);
+              }
+          }
+        }
+      });
     }, []);
 
-    async function submitMsg() {
-        const userInput = 'Where is my package 1234';
-        const response = await Interactions.send({
-            botName,
-            message: userInput,
-        });
-        console.log(`Response message: ${response.message}`);
+    async function submitMsg(userInput: string) {
+      await Interactions.send({
+        botName,
+        message: userInput
+      });
     }
 
     function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
@@ -78,6 +82,8 @@ export default function App() {
         }
         setChats([...chats, { message: input, isBot: false }]);
         clearChat();
+
+        submitMsg(input);
     }
 
     const [chats, setChats] = useState<Chat[]>([]);
