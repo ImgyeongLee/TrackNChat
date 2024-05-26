@@ -50,6 +50,22 @@ export default function App() {
           }
         }
       });
+      Interactions.onComplete({
+        botName,
+        callback: (error?: Error, response?: {[key: string]: any}) => {
+          if (error) {
+              alert('bot conversation failed');
+          } else if (response) {
+              console.debug('response: ' + JSON.stringify(response, null, 2));
+              if (response.messages == null || response.messages.length == 0) {
+                console.log("I'm not sure how to help with that.");
+              } else {
+                const message = response.messages[0].content;
+                console.log(message);
+              }
+          }
+        }
+      });
     }, []);
 
     async function submitMsg(userInput: string) {
