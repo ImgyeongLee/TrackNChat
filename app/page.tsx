@@ -14,6 +14,7 @@ import { MessageCircleQuestion } from 'lucide-react';
 import { ChatBox } from './(components)/boxes';
 import { Chat } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 const botName = 'TrackNChat';
 
@@ -50,23 +51,14 @@ export default function App() {
           }
         }
       });
-      Interactions.onComplete({
-        botName,
-        callback: (error?: Error, response?: {[key: string]: any}) => {
-          if (error) {
-              alert('bot conversation failed');
-          } else if (response) {
-              console.debug('response: ' + JSON.stringify(response, null, 2));
-              if (response.messages == null || response.messages.length == 0) {
-                console.log("I'm not sure how to help with that.");
-              } else {
-                const message = response.messages[0].content;
-                console.log(message);
-              }
-          }
-        }
-      });
+
+      init()
     }, []);
+
+    async function init() {
+        const session = await fetchAuthSession();
+        console.log(session.identityId)
+    }
 
     async function submitMsg(userInput: string) {
       await Interactions.send({
