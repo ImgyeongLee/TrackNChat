@@ -72,9 +72,12 @@ export default function App() {
                             message = '';
                             Object.entries(object).forEach(([key, value]) => {
                                 if (key == 'trackingUrl' && typeof value === 'string') {
-                                    message += `${key}: ${value.replace('%s', object.trackingNumber)} +-------+ `;
+                                    message += `<a href="${value.replace(
+                                        '%s',
+                                        object.trackingNumber
+                                    )}" target="_blank">${key}: ${value.replace('%s', object.trackingNumber)}</a>`;
                                 } else {
-                                    message += `${key}: ${value} +-------+ `;
+                                    message += `<div>${key}: ${value}</div>`;
                                 }
                             });
                         } catch (err) {

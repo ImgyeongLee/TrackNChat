@@ -7,6 +7,7 @@ import { Authenticator } from '@aws-amplify/ui-react';
 import { Hub } from 'aws-amplify/utils';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 Amplify.configure(outputs);
 
@@ -31,13 +32,20 @@ export default function App() {
             <div className="text-white font-semibold text-2xl text-center pb-3">Welcome to TrackNChat!</div>
             <Authenticator>
                 {({ signOut, user }) => (
-                    <main>
-                        <h1>Hello {user?.username}</h1>
-                        <button onClick={signOut}>Sign out</button>
-                    </main>
+                    <Card className="bg-white">
+                        <CardHeader>
+                            <CardTitle>Hello, user: {user?.username}</CardTitle>
+                            <CardDescription>See you again!</CardDescription>
+                        </CardHeader>
+                        <CardContent className="w-full">
+                            <Button className="w-full" onClick={signOut}>
+                                Sign out
+                            </Button>
+                        </CardContent>
+                    </Card>
                 )}
             </Authenticator>
-            <Button className="rounded-tr-none rounded-tl-none border-1 w-full" variant={'outline'} onClick={goHome}>
+            <Button className="mt-5 border-1 w-full" variant={'outline'} onClick={goHome}>
                 Go home
             </Button>
         </div>
