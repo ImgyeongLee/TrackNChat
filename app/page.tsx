@@ -90,7 +90,7 @@ export default function App() {
                         const { errors, data } = await client.models.ChatContent.create({
                             chatSessionId: chatSessionId.current,
                             content: message,
-                            source: 'BOT'
+                            source: 'BOT',
                         });
                         if (errors != null || data == null) {
                             throw new Error('Failed to create chat content from incoming message');
@@ -198,7 +198,14 @@ export default function App() {
         chatSessionId.current = sessionId;
         await getChatContentsForSession(sessionId).then((data) => {
             const newChats: Chat[] = [];
-            for (let i = 0; i < data.length; i++) {}
+            for (let i = 0; i < data.length; i++) {
+                if (data[i].source && data[i].source == 'BOT') {
+                    newChats.push({ message: data[i].content, isBot: true });
+                } else {
+                    newChats.push({ message: data[i].content, isBot: false });
+                }
+            }
+            setChats(newChats);
         });
     }
 
@@ -259,7 +266,7 @@ export default function App() {
         const { errors, data } = await client.models.ChatContent.create({
             chatSessionId: chatSessionId.current!,
             content: cleanedInput,
-            source: 'USER'
+            source: 'USER',
         });
         if (errors != null || data == null) {
             throw new Error('Failed to create chat content from user input');
