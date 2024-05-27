@@ -8,7 +8,6 @@ import '@aws-amplify/ui-react/styles.css';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import './globals.css';
 import { Interactions } from '@aws-amplify/interactions';
 import { MessageCircleQuestion } from 'lucide-react';
 import { ChatBox, SessionBox } from './(components)/boxes';
@@ -71,7 +70,11 @@ export default function App() {
                             const object = JSON.parse(message);
                             message = '';
                             Object.entries(object).forEach(([key, value]) => {
-                                message += `${key}: ${value} +-------+ `;
+                                if (key == 'trackingUrl' && typeof value === 'string') {
+                                    message += `${key}: ${value.replace('%s', object.trackingNumber)} +-------+ `;
+                                } else {
+                                    message += `${key}: ${value} +-------+ `;
+                                }
                             });
                         } catch (err) {
                             console.error(err);
@@ -101,9 +104,9 @@ export default function App() {
         try {
             const { username, userId: amplifyUserId, signInDetails } = await getCurrentUser();
 
-            console.log("username", username);
-            console.log("user id", amplifyUserId);
-            console.log("sign-in details", signInDetails);
+            console.log('username', username);
+            console.log('user id', amplifyUserId);
+            console.log('sign-in details', signInDetails);
 
             userId.current = amplifyUserId;
             setIsSignedIn(true);
@@ -111,11 +114,11 @@ export default function App() {
             console.error(err);
 
             const session = await fetchAuthSession();
-            userId.current = session.identityId!
+            userId.current = session.identityId!;
             setIsSignedIn(false);
         }
 
-        console.log(`userId: ${userId.current}`)
+        console.log(`userId: ${userId.current}`);
 
         setPageLoading(false);
 
@@ -272,43 +275,45 @@ export default function App() {
                 <CardHeader>
                     <CardTitle className="flex flex-row justify-between items-center">
                         <div>Ask your question!</div>
-                        <Drawer>
-                            <DrawerTrigger asChild>
-                                <Button>Sessions</Button>
-                            </DrawerTrigger>
-                            <DrawerContent className="">
-                                <div className="mx-auto w-full max-w-sm">
-                                    <DrawerHeader>
-                                        <DrawerTitle>Select Your Sessions</DrawerTitle>
-                                    </DrawerHeader>
-                                    <div className="p-2 max-h-[250px] overflow-y-auto">
-                                        <div className="flex flex-col gap-1 justify-center">
-                                            {sessions.length == 0 && (
-                                                <div className="text-center">There is no session.</div>
-                                            )}
-                                            {sessions.length > 0 &&
-                                                sessions.map((session, i) => {
-                                                    return (
-                                                        <SessionBox
-                                                            key={i}
-                                                            sessionId={session.sessionId}
-                                                            isActive={session.isActive}
-                                                            roomName={session.roomName}
-                                                            onClick={() => handleSwitchSession(session.sessionId)}
-                                                        />
-                                                    );
-                                                })}
+                        <div className="space-x-2">
+                            <Drawer>
+                                <DrawerTrigger asChild>
+                                    <Button>Sessions</Button>
+                                </DrawerTrigger>
+                                <DrawerContent className="">
+                                    <div className="mx-auto w-full max-w-sm">
+                                        <DrawerHeader>
+                                            <DrawerTitle>Select Your Sessions</DrawerTitle>
+                                        </DrawerHeader>
+                                        <div className="p-2 max-h-[250px] overflow-y-auto">
+                                            <div className="flex flex-col gap-1 justify-center">
+                                                {sessions.length == 0 && (
+                                                    <div className="text-center">There is no session.</div>
+                                                )}
+                                                {sessions.length > 0 &&
+                                                    sessions.map((session, i) => {
+                                                        return (
+                                                            <SessionBox
+                                                                key={i}
+                                                                sessionId={session.sessionId}
+                                                                isActive={session.isActive}
+                                                                roomName={session.roomName}
+                                                                onClick={() => handleSwitchSession(session.sessionId)}
+                                                            />
+                                                        );
+                                                    })}
+                                            </div>
                                         </div>
+                                        <DrawerFooter>
+                                            <DrawerClose asChild>
+                                                <Button variant="outline">Close</Button>
+                                            </DrawerClose>
+                                        </DrawerFooter>
                                     </div>
-                                    <DrawerFooter>
-                                        <DrawerClose asChild>
-                                            <Button variant="outline">Close</Button>
-                                        </DrawerClose>
-                                    </DrawerFooter>
-                                </div>
-                            </DrawerContent>
-                        </Drawer>
-                        <Button onClick={signIn}>{!isSignedIn ? 'Sign In' : 'Sign Out'}</Button>
+                                </DrawerContent>
+                            </Drawer>
+                            <Button onClick={signIn}>{!isSignedIn ? 'Sign In' : 'Sign Out'}</Button>
+                        </div>
                     </CardTitle>
                     <CardDescription>Type / and press the enter to use a template input.</CardDescription>
                 </CardHeader>
