@@ -86,6 +86,7 @@ export default function App() {
                     setChats((prev) => [...prev, { message: message, isBot: true }]);
 
                     if (chatSessionId.current != null) {
+                        console.log('BOT ID == ', chatSessionId.current);
                         const { errors, data } = await client.models.ChatContent.create({
                             chatSessionId: chatSessionId.current,
                             content: message,
@@ -192,6 +193,7 @@ export default function App() {
     }
 
     async function handleSwitchSession(sessionId: string) {
+        chatSessionId.current = sessionId;
         await getChatContentsForSession(sessionId).then((data) => console.log('DATA == ', data));
     }
 
@@ -247,7 +249,7 @@ export default function App() {
 
             setSessions((prev) => [{ sessionId, roomName: roomName, isActive: true }, ...prev]);
         }
-
+        console.log('USER ID == ', chatSessionId.current);
         const { errors, data } = await client.models.ChatContent.create({
             chatSessionId: chatSessionId.current!,
             content: cleanedInput,
