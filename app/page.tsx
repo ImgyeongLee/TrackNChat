@@ -196,7 +196,10 @@ export default function App() {
 
     async function handleSwitchSession(sessionId: string) {
         chatSessionId.current = sessionId;
-        await getChatContentsForSession(sessionId).then((data) => console.log('DATA == ', data));
+        await getChatContentsForSession(sessionId).then((data) => {
+            const newChats: Chat[] = [];
+            for (let i = 0; i < data.length; i++) {}
+        });
     }
 
     function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
