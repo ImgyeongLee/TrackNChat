@@ -123,6 +123,7 @@ export default function App() {
     }
 
     async function getChatSessions() {
+        console.log(`userId: ${userId.current}`)
         const { errors, data } = await client.models.ChatSession.list({
             filter: {
                 userId: {
@@ -133,17 +134,35 @@ export default function App() {
         if (errors != null || data == null) {
             throw new Error('Failed to list chat sessions');
         }
+        console.log(data)
 
         const dataArr: Session[] = [];
 
-        for (let i = 0; i < data.length; i++) {
-            dataArr.push({ sessionId: data[i].userId, roomName: 'Expired Room', isActive: false });
+        const sortedData = data.toSorted((a, b) => {
+            const dateA = new Date(a.updatedAt);
+            const dateB = new Date(b.updatedAt);
+            return dateB.getTime() - dateA.getTime();
+        });
+        for (const item of sortedData) {
+            const updatedAt: Date = new Date(item.updatedAt);
+            // format to human readable date
+            const formattedDate = updatedAt.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
+            });
+            dataArr.push({ sessionId: item.id, roomName: formattedDate, isActive: false });
         }
 
         setSessions(dataArr);
     }
 
     async function getChatContentsForSession(chatSessionId: string) {
+        console.log(`chatSessionId: ${chatSessionId}`)
+
         const { errors, data } = await client.models.ChatContent.list({
             filter: {
                 chatSessionId: {
@@ -201,7 +220,6 @@ export default function App() {
         setIsLoading(true);
 
         if (chats.length == 0) {
-            const session = await fetchAuthSession();
             let roomName = '';
             if (input.length < 8) {
                 roomName = input;
@@ -209,20 +227,21 @@ export default function App() {
                 roomName = input.slice(0, 7) + '...';
             }
 
-            const userId = session.identityId;
-            if (userId == null) {
-                throw new Error('User ID is null');
+            if (userId.current == null) {
+                throw new Error('User ID is not set');
             }
-
-            setSessions((prev) => [{ sessionId: userId, roomName: roomName, isActive: true }, ...prev]);
+            const id = userId.current
 
             const { errors, data } = await client.models.ChatSession.create({
-                userId,
+                userId: id,
             });
             if (errors != null || data == null) {
                 throw new Error('Failed to create chat session');
             }
-            chatSessionId.current = data.id;
+            const sessionId = data.id;
+            chatSessionId.current = sessionId;
+
+            setSessions((prev) => [{ sessionId, roomName: roomName, isActive: true }, ...prev]);
         }
 
         const { errors, data } = await client.models.ChatContent.create({
