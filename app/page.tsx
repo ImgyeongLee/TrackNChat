@@ -26,6 +26,7 @@ import {
     DrawerClose,
 } from '@/components/ui/drawer';
 import { getCurrentUser } from 'aws-amplify/auth';
+import { SquareLoader } from 'react-spinners';
 
 const botName = 'TrackNChat';
 
@@ -57,7 +58,7 @@ export default function App() {
             botName,
             callback: async (error?: Error, response?: { [key: string]: any }) => {
                 if (error) {
-                    alert('bot conversation failed');
+                    setChats((prev) => [...prev, { message: 'ERROR: bot conversation failed', isBot: true }]);
                 } else if (response) {
                     console.debug(response);
                     setIsLoading(false);
@@ -126,7 +127,7 @@ export default function App() {
     }
 
     async function getChatSessions() {
-        console.log(`userId: ${userId.current}`)
+        console.log(`userId: ${userId.current}`);
         const { errors, data } = await client.models.ChatSession.list({
             filter: {
                 userId: {
@@ -137,7 +138,7 @@ export default function App() {
         if (errors != null || data == null) {
             throw new Error('Failed to list chat sessions');
         }
-        console.log(data)
+        console.log(data);
 
         const dataArr: Session[] = [];
 
@@ -164,7 +165,7 @@ export default function App() {
     }
 
     async function getChatContentsForSession(chatSessionId: string) {
-        console.log(`chatSessionId: ${chatSessionId}`)
+        console.log(`chatSessionId: ${chatSessionId}`);
 
         const { errors, data } = await client.models.ChatContent.list({
             filter: {
@@ -233,7 +234,7 @@ export default function App() {
             if (userId.current == null) {
                 throw new Error('User ID is not set');
             }
-            const id = userId.current
+            const id = userId.current;
 
             const { errors, data } = await client.models.ChatSession.create({
                 userId: id,
@@ -262,97 +263,113 @@ export default function App() {
     const [input, setInput] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [sessions, setSessions] = useState<Session[]>([]);
-    const [currentSession, setCurrentSession] = useState<string>();
     const chatsEndRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         chatsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [chats]);
 
-    return (
-        <main className="h-full w-full flex flex-col justify-center items-center">
-            <Card className="w-[calc(190px+30vw)]">
-                <CardHeader>
-                    <CardTitle className="flex flex-row justify-between items-center">
-                        <div>Ask your question!</div>
-                        <div className="space-x-2">
-                            <Drawer>
-                                <DrawerTrigger asChild>
-                                    <Button>Sessions</Button>
-                                </DrawerTrigger>
-                                <DrawerContent className="">
-                                    <div className="mx-auto w-full max-w-sm">
-                                        <DrawerHeader>
-                                            <DrawerTitle>Select Your Sessions</DrawerTitle>
-                                        </DrawerHeader>
-                                        <div className="p-2 max-h-[250px] overflow-y-auto">
-                                            <div className="flex flex-col gap-1 justify-center">
-                                                {sessions.length == 0 && (
-                                                    <div className="text-center">There is no session.</div>
-                                                )}
-                                                {sessions.length > 0 &&
-                                                    sessions.map((session, i) => {
-                                                        return (
-                                                            <SessionBox
-                                                                key={i}
-                                                                sessionId={session.sessionId}
-                                                                isActive={session.isActive}
-                                                                roomName={session.roomName}
-                                                                onClick={() => handleSwitchSession(session.sessionId)}
-                                                            />
-                                                        );
-                                                    })}
+    function renderPage() {
+        if (pageLoading) {
+            return (
+                <main className="h-full w-full flex flex-col justify-center items-center">
+                    <SquareLoader color="#ffffff" size={150} />
+                    <div className="text-slate-100 py-5">Drawing page...</div>
+                </main>
+            );
+        } else {
+            return (
+                <main className="h-full w-full flex flex-col justify-center items-center">
+                    <Card className="w-[calc(190px+30vw)]">
+                        <CardHeader>
+                            <CardTitle className="flex flex-row justify-between items-center">
+                                <div>Ask your question!</div>
+                                <div className="space-x-2">
+                                    <Drawer>
+                                        <DrawerTrigger asChild>
+                                            <Button>Sessions</Button>
+                                        </DrawerTrigger>
+                                        <DrawerContent className="">
+                                            <div className="mx-auto w-full max-w-sm">
+                                                <DrawerHeader>
+                                                    <DrawerTitle>Select Your Sessions</DrawerTitle>
+                                                </DrawerHeader>
+                                                <div className="p-2 max-h-[250px] overflow-y-auto">
+                                                    <div className="flex flex-col gap-1 justify-center">
+                                                        {sessions.length == 0 && (
+                                                            <div className="text-center">There is no session.</div>
+                                                        )}
+                                                        {sessions.length > 0 &&
+                                                            sessions.map((session, i) => {
+                                                                return (
+                                                                    <SessionBox
+                                                                        key={i}
+                                                                        sessionId={session.sessionId}
+                                                                        isActive={session.isActive}
+                                                                        roomName={session.roomName}
+                                                                        onClick={() =>
+                                                                            handleSwitchSession(session.sessionId)
+                                                                        }
+                                                                    />
+                                                                );
+                                                            })}
+                                                    </div>
+                                                </div>
+                                                <DrawerFooter>
+                                                    <DrawerClose asChild>
+                                                        <Button variant="outline">Close</Button>
+                                                    </DrawerClose>
+                                                </DrawerFooter>
                                             </div>
-                                        </div>
-                                        <DrawerFooter>
-                                            <DrawerClose asChild>
-                                                <Button variant="outline">Close</Button>
-                                            </DrawerClose>
-                                        </DrawerFooter>
-                                    </div>
-                                </DrawerContent>
-                            </Drawer>
-                            <Button onClick={signIn}>{!isSignedIn ? 'Sign In' : 'Sign Out'}</Button>
-                        </div>
-                    </CardTitle>
-                    <CardDescription>Type / and press the enter to use a template input.</CardDescription>
-                </CardHeader>
-                <CardContent style={{ overflowWrap: 'anywhere' }}>
-                    <div
-                        className={cn(
-                            'bg-slate-200 w-full min-h-[50vh] max-h-[50vh] overflow-y-auto p-2 flex flex-col items-center overflow-x-hidden gap-2',
-                            {
-                                'justify-center': chats.length == 0,
-                            }
-                        )}>
-                        {chats.length == 0 && (
-                            <>
-                                <MessageCircleQuestion size={60} className="text-[#0e1926]" />
-                                <div className="text-sm">How's your day?</div>
-                            </>
-                        )}
-                        {chats.length != 0 &&
-                            chats.map((chat, i) => {
-                                return <ChatBox key={i} message={chat.message} isBot={chat.isBot} />;
-                            })}
-                        <div ref={chatsEndRef} />
-                    </div>
-                </CardContent>
-                <CardFooter className="flex justify-between space-x-2">
-                    {isLoading && <Input type="text" placeholder="e.g. Type your tracking number..." disabled />}
-                    {!isLoading && (
-                        <Input
-                            type="text"
-                            placeholder="e.g. Type your tracking number..."
-                            value={input}
-                            onChange={handleInputChange}
-                            onKeyDownCapture={handleKeyDown}
-                        />
-                    )}
-                    {isLoading && <Button disabled>Pending...</Button>}
-                    {!isLoading && <Button onClick={handleClick}>Send</Button>}
-                </CardFooter>
-            </Card>
-        </main>
-    );
+                                        </DrawerContent>
+                                    </Drawer>
+                                    <Button onClick={signIn}>{!isSignedIn ? 'Sign In' : 'Sign Out'}</Button>
+                                </div>
+                            </CardTitle>
+                            <CardDescription>Type / and press the enter to use a template input.</CardDescription>
+                        </CardHeader>
+                        <CardContent style={{ overflowWrap: 'anywhere' }}>
+                            <div
+                                className={cn(
+                                    'bg-slate-200 w-full min-h-[50vh] max-h-[50vh] overflow-y-auto p-2 flex flex-col items-center overflow-x-hidden gap-2',
+                                    {
+                                        'justify-center': chats.length == 0,
+                                    }
+                                )}>
+                                {chats.length == 0 && (
+                                    <>
+                                        <MessageCircleQuestion size={60} className="text-[#0e1926]" />
+                                        <div className="text-sm">How's your day?</div>
+                                    </>
+                                )}
+                                {chats.length != 0 &&
+                                    chats.map((chat, i) => {
+                                        return <ChatBox key={i} message={chat.message} isBot={chat.isBot} />;
+                                    })}
+                                <div ref={chatsEndRef} />
+                            </div>
+                        </CardContent>
+                        <CardFooter className="flex justify-between space-x-2">
+                            {isLoading && (
+                                <Input type="text" placeholder="e.g. Type your tracking number..." disabled />
+                            )}
+                            {!isLoading && (
+                                <Input
+                                    type="text"
+                                    placeholder="e.g. Type your tracking number..."
+                                    value={input}
+                                    onChange={handleInputChange}
+                                    onKeyDownCapture={handleKeyDown}
+                                />
+                            )}
+                            {isLoading && <Button disabled>Pending...</Button>}
+                            {!isLoading && <Button onClick={handleClick}>Send</Button>}
+                        </CardFooter>
+                    </Card>
+                </main>
+            );
+        }
+    }
+
+    return renderPage();
 }
