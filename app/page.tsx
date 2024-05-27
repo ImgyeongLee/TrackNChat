@@ -26,6 +26,7 @@ import {
     DrawerFooter,
     DrawerClose,
 } from '@/components/ui/drawer';
+import { getCurrentUser } from 'aws-amplify/auth';
 
 const botName = 'TrackNChat';
 
@@ -47,7 +48,10 @@ Amplify.configure({
 const client = generateClient<Schema>();
 
 export default function App() {
+    const [pageLoading, setPageLoading] = useState<boolean>(true);
+    const userId = useRef<string | null>(null);
     const chatSessionId = useRef<string | null>(null);
+    const [isSignedIn, setIsSignedIn] = useState<boolean>(false);
 
     useEffect(() => {
         Interactions.onComplete({
@@ -90,17 +94,39 @@ export default function App() {
             },
         });
 
-        getChatSessions();
+        init();
     }, []);
 
-    async function getChatSessions() {
-        const session = await fetchAuthSession();
-        const userId = session.identityId;
+    async function init() {
+        try {
+            const { username, userId: amplifyUserId, signInDetails } = await getCurrentUser();
 
+            console.log("username", username);
+            console.log("user id", amplifyUserId);
+            console.log("sign-in details", signInDetails);
+
+            userId.current = amplifyUserId;
+            setIsSignedIn(true);
+        } catch (err) {
+            console.error(err);
+
+            const session = await fetchAuthSession();
+            userId.current = session.identityId!
+            setIsSignedIn(false);
+        }
+
+        console.log(`userId: ${userId.current}`)
+
+        setPageLoading(false);
+
+        await getChatSessions();
+    }
+
+    async function getChatSessions() {
         const { errors, data } = await client.models.ChatSession.list({
             filter: {
                 userId: {
-                    eq: userId,
+                    eq: userId.current!,
                 },
             },
         });
@@ -129,6 +155,10 @@ export default function App() {
             throw new Error('Failed to list chat contents');
         }
         return data;
+    }
+
+    function signIn() {
+        window.location.href = '/login';
     }
 
     async function submitMsg(userInput: string) {
@@ -259,6 +289,7 @@ export default function App() {
                                 </div>
                             </DrawerContent>
                         </Drawer>
+                        <Button onClick={signIn}>{!isSignedIn ? 'Sign In' : 'Sign Out'}</Button>
                     </CardTitle>
                     <CardDescription>Type / and press the enter to use a template input.</CardDescription>
                 </CardHeader>
