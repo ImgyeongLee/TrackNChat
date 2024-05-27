@@ -15,8 +15,9 @@ const schema = a.schema({
 		.authorization((allow) => [allow.publicApiKey()]),
 	ChatContent: a
 		.model({
-			chatSessionId: a.id().required(),
 			content: a.string().required(),
+			source: a.enum(['USER', 'BOT']),
+			chatSessionId: a.id().required(),
 			chatSession: a.belongsTo('ChatSession', 'chatSessionId')
 		})
 		.authorization((allow) => [allow.publicApiKey()])
