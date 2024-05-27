@@ -72,10 +72,12 @@ export default function App() {
                             message = '';
                             Object.entries(object).forEach(([key, value]) => {
                                 if (key == 'trackingUrl' && typeof value === 'string') {
-                                    message += `<a href="${value.replace(
+                                    message += `${key}: <a href="${value.replace(
                                         '%s',
                                         object.trackingNumber
-                                    )}" target="_blank">${key}: ${value.replace('%s', object.trackingNumber)}</a>`;
+                                    )}" target="_blank">${value.replace('%s', object.trackingNumber)}</a>`;
+                                } else if (typeof value === 'object') {
+                                    message += `<div>${key}: ${JSON.stringify(value)}</div>`;
                                 } else {
                                     message += `<div>${key}: ${value}</div>`;
                                 }
@@ -183,6 +185,7 @@ export default function App() {
         if (errors != null || data == null) {
             throw new Error('Failed to list chat contents');
         }
+        console.log(`getChatContentsForSession`, data);
         return data;
     }
 
@@ -345,7 +348,7 @@ export default function App() {
                                     <Button onClick={signIn}>{!isSignedIn ? 'Sign In' : 'Sign Out'}</Button>
                                 </div>
                             </CardTitle>
-                            <CardDescription>Type / and press the enter to use a template input.</CardDescription>
+                            <CardDescription>Type your question in the text input.</CardDescription>
                         </CardHeader>
                         <CardContent style={{ overflowWrap: 'anywhere' }}>
                             <div
@@ -358,7 +361,7 @@ export default function App() {
                                 {chats.length == 0 && (
                                     <>
                                         <MessageCircleQuestion size={60} className="text-[#0e1926]" />
-                                        <div className="text-sm">How's your day?</div>
+                                        <div className="text-sm">What can I help you with today?</div>
                                     </>
                                 )}
                                 {chats.length != 0 &&

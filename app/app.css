@@ -11,3 +11,8 @@ main {
     justify-content: center;
     align-items: center;
 }
+
+a {
+    color: #35b1f0;
+    text-decoration: underline;
+}
