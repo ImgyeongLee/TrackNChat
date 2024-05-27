@@ -15,6 +15,8 @@ import { ChatBox } from './(components)/boxes';
 import { Chat } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { fetchAuthSession } from 'aws-amplify/auth';
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "@/amplify/data/resource";
 
 const botName = 'TrackNChat';
 
@@ -33,31 +35,73 @@ Amplify.configure({
     },
 });
 
+const client = generateClient<Schema>();
+
 export default function App() {
+    const chatSessionId = useRef<string | null>(null);
+
     useEffect(() => {
       Interactions.onComplete({
         botName,
-        callback: (error?: Error, response?: {[key: string]: any}) => {
+        callback: async (error?: Error, response?: {[key: string]: any}) => {
           if (error) {
-              alert('bot conversation failed');
+                alert('bot conversation failed');
           } else if (response) {
-              console.debug('response: ' + JSON.stringify(response, null, 2));
-              if (response.messages == null || response.messages.length == 0) {
-                console.log("I'm not sure how to help with that.");
-              } else {
-                const message = response.messages[0].content;
+                console.debug(response);
+                let message = '';
+                if (response.messages == null || response.messages.length == 0) {
+                    message = "I'm not sure how to help with that.";
+                } else {
+                    message = response.messages[0].content;
+                }
+
                 console.log(message);
-              }
+
+                if (chatSessionId.current != null) {
+                    const { errors, data } = await client.models.ChatContent.create({
+                        chatSessionId: chatSessionId.current,
+                        content: message,
+                    })
+                    if (errors != null || data == null) {
+                        throw new Error("Failed to create chat content from incoming message");
+                    }
+                }
           }
         }
       });
 
-      init()
+      getChatSessions();
     }, []);
 
-    async function init() {
+    async function getChatSessions() {
         const session = await fetchAuthSession();
-        console.log(session.identityId)
+        const userId = session.identityId
+
+        const { errors, data } = await client.models.ChatSession.list({
+            filter: {
+                userId: {
+                    eq: userId
+                }
+            }
+        })
+        if (errors != null || data == null) {
+            throw new Error("Failed to list chat sessions");
+        }
+        console.log(`chat sessions: ${JSON.stringify(data, null, 2)}`);
+    }
+
+    async function getChatContentsForSession(chatSessionId: string) {
+        const { errors, data } = await client.models.ChatContent.list({
+            filter: {
+                chatSessionId: {
+                    eq: chatSessionId
+                }
+            }
+        })
+        if (errors != null || data == null) {
+            throw new Error("Failed to list chat contents");
+        }
+        return data;
     }
 
     async function submitMsg(userInput: string) {
@@ -84,14 +128,41 @@ export default function App() {
         setInput('');
     }
 
-    function fakeSubmitMsg() {
+    async function fakeSubmitMsg() {
         if (input.length == 0) {
             return;
         }
-        setChats([...chats, { message: input, isBot: false }]);
+
+        const cleanedInput = input.trim();
+
+        setChats([...chats, { message: cleanedInput, isBot: false }]);
         clearChat();
 
-        submitMsg(input);
+        if (chats.length == 0) {
+            const session = await fetchAuthSession();
+            const userId = session.identityId
+            if (userId == null) {
+                throw new Error("User ID is null");
+            }
+
+            const { errors, data } = await client.models.ChatSession.create({
+                userId
+            })
+            if (errors != null || data == null) {
+                throw new Error("Failed to create chat session");
+            }
+            chatSessionId.current = data.id
+        }
+
+        const { errors, data } = await client.models.ChatContent.create({
+            chatSessionId: chatSessionId.current!,
+            content: cleanedInput,
+        })
+        if (errors != null || data == null) {
+            throw new Error("Failed to create chat content from user input");
+        }
+
+        await submitMsg(cleanedInput);
     }
 
     const [chats, setChats] = useState<Chat[]>([]);
